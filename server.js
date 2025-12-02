@@ -7,6 +7,7 @@ const cors = require("cors");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
 // Ensure uploads folder exists
 const uploadFolder = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadFolder)) fs.mkdirSync(uploadFolder);
@@ -16,7 +17,10 @@ const dbFile = path.join(__dirname, "db.json");
 
 // Initialize DB if not exists
 if (!fs.existsSync(dbFile)) {
-  fs.writeFileSync(dbFile, JSON.stringify({ landlords: [], organizations: [] }, null, 2));
+  fs.writeFileSync(
+    dbFile,
+    JSON.stringify({ landlords: [], organizations: [] }, null, 2)
+  );
 }
 
 // Helper functions for DB
@@ -44,13 +48,11 @@ app.get("/", (req, res) => {
   res.send("PoleGrid Services API running!");
 });
 
-// Get all landlords
 app.get("/api/landlords", (req, res) => {
   const db = readDB();
   res.json({ success: true, data: db.landlords });
 });
 
-// Get all organizations
 app.get("/api/organizations", (req, res) => {
   const db = readDB();
   res.json({ success: true, data: db.organizations });
@@ -62,26 +64,24 @@ app.post(
   "/api/landlord/register",
   upload.fields([
     { name: "idPhoto", maxCount: 1 },
-    { name: "supportingDocs", maxCount: 5 },
+    { name: "ownershipDoc", maxCount: 1 },
   ]),
   (req, res) => {
     const formData = req.body;
     const files = req.files;
 
-    // Add file paths to formData
-    formData.idPhoto = files.idPhoto ? files.idPhoto[0].filename : null;
-    formData.supportingDocs = files.supportingDocs
-      ? files.supportingDocs.map((f) => f.filename)
-      : [];
+    formData.idPhoto = files.idPhoto ? `/uploads/${files.idPhoto[0].filename}` : null;
+    formData.ownershipDoc = files.ownershipDoc
+      ? `/uploads/${files.ownershipDoc[0].filename}`
+      : null;
 
-    // Update DB
     const db = readDB();
     db.landlords.push(formData);
     writeDB(db);
 
     res.json({
       success: true,
-      message: "Landlord registered and saved to DB!",
+      message: "Landlord registered successfully!",
       data: formData,
     });
   }
@@ -95,26 +95,24 @@ app.post(
     const formData = req.body;
     const files = req.files;
 
-    formData.documents = files ? files.map((f) => f.filename) : [];
+    formData.documents = files ? files.map((f) => `/uploads/${f.filename}`) : [];
 
-    // Update DB
     const db = readDB();
     db.organizations.push(formData);
     writeDB(db);
 
     res.json({
       success: true,
-      message: "Organization registered and saved to DB!",
+      message: "Organization registered successfully!",
       data: formData,
     });
   }
 );
 
-// Generic file upload route
+// Generic file upload
 app.post("/api/upload", upload.single("file"), (req, res) => {
   const file = req.file;
-  if (!file)
-    return res.status(400).json({ success: false, message: "No file uploaded" });
+  if (!file) return res.status(400).json({ success: false, message: "No file uploaded" });
 
   res.json({
     success: true,
