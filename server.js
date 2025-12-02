@@ -41,6 +41,8 @@ const upload = multer({ storage });
 app.use(express.json());
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded files statically
 app.use("/uploads", express.static(uploadFolder));
 
 // ===== GET ROUTES =====
@@ -56,6 +58,16 @@ app.get("/api/landlords", (req, res) => {
 app.get("/api/organizations", (req, res) => {
   const db = readDB();
   res.json({ success: true, data: db.organizations });
+});
+
+// Endpoint to preview uploaded files in browser
+app.get("/uploads/:filename", (req, res) => {
+  const filePath = path.join(uploadFolder, req.params.filename);
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send("File not found");
+  }
 });
 
 // ===== POST ROUTES =====
